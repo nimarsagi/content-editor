@@ -1,0 +1,16 @@
+# Known terms, passed to transcription on every run so speech-to-text biases
+# toward them. Proper nouns, brand names, acronyms — the words that carry the
+# meaning and that transcription reliably mangles.
+#
+# One term per line. Blank lines and # comments ignored.
+#
+# GROWS BY PROPOSAL ONLY. learn_words.py proposes a term once you have corrected
+# it in two separate runs; it never writes here directly.
+# See governance.md rule 2.
+#
+# Seed it by hand with whatever you already know you say. That costs nothing and
+# saves the first two runs from mangling the obvious ones.
+
+Claude
+Anthropic
+ICM

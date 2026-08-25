@@ -1,0 +1,31 @@
+# Dependencies for the pipeline. None of them are subscription-gated — replacing
+# a paywalled subtitle generator is the reason this build exists.
+#
+#   pip3 install -r requirements.txt
+
+PyYAML>=6.0
+
+# Local word-level transcription. faster-whisper runs the Whisper models through
+# CTranslate2 on CPU, which is what makes this viable without a GPU, and it
+# exposes both word_timestamps and initial_prompt — the two things this build
+# cannot do without. No account, no API key, no subscription.
+faster-whisper>=1.0.0
+
+# REQUIRED BY THE PIPELINE, as of 2026-08-01. It used to be optional — read by
+# tools/measure_audio.py and nothing else — and that note is worth keeping only
+# to say it is no longer true. The audio calibration stage does its levelling as
+# arithmetic on the waveform, in numpy, inside a normal run. Without this line
+# installed, a run now stops at the calibration step.
+#
+# It stays the ONLY numeric dependency on purpose. scipy, librosa and soundfile
+# are not installed and are not to be introduced: the measurement this build
+# needs — framing, RMS, a one-pole filter — is a few lines of numpy, and each of
+# those packages is a large install carrying a build toolchain behind it.
+numpy>=1.24
+
+# NOT Python dependencies, but required and checked at runtime:
+#   ffmpeg / ffprobe   — brew install ffmpeg
+#   Node + Remotion    — cd remotion && npm install
+#
+# Remotion is what burns the captions onto the video. It is a Node package, so
+# it installs from remotion/package.json rather than from here.

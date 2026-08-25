@@ -1,0 +1,14 @@
+# The only place a filesystem path appears in this workspace.
+# Nothing in stages/ may hardcode one.
+
+# Where render_captions.py writes the finished captioned video.
+render_output: "~/Movies/content-editor-renders"
+
+# Where the audio stage writes the levelled copy of your export. Relative to the
+# workspace, unlike render_output — this is working material the next stage picks
+# up, not the file you post, and it is cleared without ceremony.
+#
+# IT FILLS WITH FULL-SIZE VIDEO. One copy per run, git-ignored, and safe to
+# delete at any time: render_captions.py falls back to the original export when
+# the calibrated file is gone.
+audio_output: "output/audio"

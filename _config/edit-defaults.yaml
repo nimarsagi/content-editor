@@ -1,0 +1,539 @@
+# edit-defaults.yaml — the operative values
+#
+# Extracted once, by hand, from the two source specs in reference/source-specs/.
+# Precedence and collisions were resolved at extraction time so no script has to
+# re-litigate them at runtime. Every value carries the line it came from.
+#
+# THE MOST IMPORTANT THING ABOUT THIS FILE IS ITS SHAPE.
+#
+#   rules:        enforced. A violation is a bug.
+#   diagnostics:  measured, printed, and never acted on. A value outside these
+#                 ranges is information, not a failure.
+#
+# A flat list is what let four caption values sit together looking equally
+# binding when they could not all be true at once. Do not merge the sections.
+#
+# Precedence when the two specs disagree: reel-typography-spec wins on how text
+# LOOKS (font, weight, size, colour treatment); reel-edit-spec wins on the
+# caption vertical anchor and on pacing. Where precedence produced no answer, a
+# decision was made and is recorded inline.
+
+rules:
+
+  # ---- caption timing ------------------------------------------------
+  # Source: reel-edit-spec section 2, `timing:` block.
+  # DURATION IS THE RULE. See diagnostics.words_per_card for why word count
+  # cannot also be one.
+  caption:
+    min_duration_s: 0.6          # edit-spec: min_duration 0.6s
+    target_duration_s: [1.0, 1.5]  # edit-spec: measured mean 1.06s/card over 22 changes
+    max_duration_s: 2.5          # edit-spec: max_duration 2.5s
+    gap_between_cards_s: 0.0     # edit-spec: "no gap between cards", card N ends the frame N+1 begins
+    lead_in_s: 0.0               # edit-spec: "card appears on the first phoneme, no anticipation"
+    caption_motion: none         # edit-spec: "no pop, no karaoke highlight, no typewriter".
+                                 # NOT "animation": that word names the separate, unstarted
+                                 # project of drawing visuals into videos. Deleting everything
+                                 # about animation once nearly took this line with it, which
+                                 # would have let a later build put popping captions back.
+
+    # Splitting
+    split_on_silence_ms: 120     # edit-spec: split_on silence >= 120ms
+    split_on_clause_punctuation: [",", ".", "?", "!", "—"]
+    allow_orphan_cards: true     # edit-spec: "do not merge a 2-word tail into the previous card"
+                                 # OVERRIDDEN FOR UNDER-FLOOR CARDS ONLY, 2026-07-31, on the
+                                 # person's call. This value and min_duration_s contradict each
+                                 # other when the speech is dense: a 2-word tail spoken quickly
+                                 # lasts ~0.3s, and captions run wall-to-wall so it cannot be
+                                 # held longer. In the reference reels the tail followed a real
+                                 # pause and read as deliberate; a tail that flashes past in
+                                 # 0.36s reads as a mistake. join_underfloor() joins those, and
+                                 # only those. Everything above the floor keeps its own card.
+                                 #
+                                 # MOST CANNOT BE JOINED. On the 2026-07-30 run, 10 cards fell
+                                 # under the floor and 2 could be joined; the other 8 came to
+                                 # 29-41 characters against a 25-character row. Those remain,
+                                 # and are reported rather than called bugs — see the note on
+                                 # max_lines. A second row is the only lever that clears them.
+    prefer_fewest_cards: true    # NOT from the spec — a decision. A chunker that splits at
+                                 # every legal boundary produces perfect timings and a frantic
+                                 # result. "Regroups too often" is a live candidate for the
+                                 # earlier subtitle build's failure.
+    preserve_quotes: true        # edit-spec: quotes open on one card and close on a later one.
+                                 # Never strip, never auto-balance per card.
+    max_lines: 1                 # edit-spec: max_lines 2 (R1). R2/R3 occasionally allowed 3.
+                                 # OVERRIDDEN 2026-07-30, on the person's call after watching
+                                 # the first full run: two rows read as a block to be scanned
+                                 # rather than a line to be read — "parallel" rather than a
+                                 # sequence. One row forces the eye left to right.
+                                 # typography.caption_size_px came down from 62 to 46 to pay
+                                 # for it; at 62 a single row holds 17 characters, which split
+                                 # this transcript into 108 cards averaging 0.71s, 39 of them
+                                 # under the duration floor. The two values move together.
+
+    # A card may not END on one of these. They are the words that cannot stand
+    # alone: read "...conversation, the" and you are left holding an unfinished
+    # phrase while the next card arrives. Observed directly — cards ending on a
+    # function word ran 21% in the first half of the 2026-07-30 run and 38% in
+    # the second, which is what made the back half harder to read even though
+    # the pacing had barely changed.
+    #
+    # THIS IS A FALLBACK, NOT A SPLIT SIGNAL. Punctuation and silence are still
+    # what choose where a card ends. This list only says where a split may not
+    # land once those two have run out — which is what happens when the speech
+    # gets denser and the pauses do not keep up.
+    #
+    # Closed-class words only. Adjectives dangle too ("that the new" / "session
+    # actually"), but they are an open class and cannot be listed; a list that
+    # tried would be endless and still incomplete.
+    #
+    # EVERY ENTRY IS QUOTED, and that is not style. YAML reads bare on, off, yes,
+    # no, y and n as booleans, so an unquoted `on` arrives as True and the
+    # chunker crashes on it. Quoting the whole list means the next word added
+    # here cannot reintroduce that.
+    never_end_card_on:
+      ["a", "an", "the", "and", "or", "but", "so", "because", "that", "which",
+       "who", "if", "when", "while", "as", "than",
+       "of", "in", "on", "at", "to", "for", "with", "from", "into", "onto",
+       "over", "under", "about", "by", "without", "within", "through",
+       "during", "after", "before", "between", "against", "upon", "across",
+       "around", "behind", "beyond", "toward", "towards",
+       "i", "you", "he", "she", "it", "we", "they", "what", "where", "how", "why",
+       "is", "are", "was", "were", "be", "been", "am", "do", "does", "did",
+       "has", "have", "had", "can", "could", "will", "would", "should",
+       "must", "might", "may",
+       "my", "your", "his", "her", "its", "our", "their",
+       "this", "these", "those", "some", "any", "each", "every", "more",
+       "most", "very"]
+
+  # ---- caption geometry ----------------------------------------------
+  # Every number here was checked against every other number here. That check
+  # is the reason four of them are not what their source spec said.
+  geometry:
+    canvas: [1080, 1920]         # typography-spec: 1080x1920, high confidence
+
+    safe_zone:                   # typography-spec, safe zone table
+      top: 250
+      bottom: 480
+      left: 120
+      right: 250
+
+    # Vertical anchor. Expressed as a FRACTION, never a pixel constant, so it
+    # survives a canvas change.
+    #
+    # The edit spec says "65-72% of frame height, pick one and keep it" and does
+    # not say what is being anchored. Resolved to 65%, anchoring the BLOCK'S
+    # VERTICAL CENTRE, because:
+    #   - the typography spec independently puts burned-in captions at 1150-1350,
+    #     whose centre is 1250 = 65.1% of 1920
+    #   - 65% is what two of the three reference reels measured; 72% was the
+    #     single outlier
+    #   - 72% BREACHES the bottom safe margin: a two-line card there runs to
+    #     y~1463, past the usable floor of 1440
+    anchor_fraction: 0.65        # 0.65 * 1920 = 1248 px, the block's centre
+    anchor_semantics: block_centre
+    bottom_limit_px: 1440        # 1920 - 480. ASSERTED at runtime, not assumed.
+
+    # Horizontal. The typography spec's "710x1190 centred" content area is not
+    # centred: margins of 120 left and 250 right put its middle at x=475, which
+    # is 65px off the frame's true centre. Text centred on 475 looks off-centre
+    # for the reason that it is.
+    centre_x: 540                # the frame's true centre
+    max_line_width_px: 580       # 2 * (540 - 250). The right margin binds.
+                                 # This cap is what makes centring on 540 safe
+                                 # rather than a trade — nothing can overrun.
+
+    # Characters per line is DERIVED from the cap and the font size, never copied.
+    # Recompute if either the cap or the font size changes. chunk_captions.py
+    # recomputes it at runtime and warns if this stored value disagrees, so this
+    # is a record of the arithmetic rather than the thing the script trusts.
+    #
+    #   580 / (44 x 0.52) = 25.35
+    #
+    # FLOORED TO 25, NOT ROUNDED TO 26 — the same conservatism that gave 17 at
+    # 62px. The cap exists so nothing can overrun the right margin: 25 characters
+    # comes to 572px and fits; 26 comes to 594.9px and does not.
+    #
+    # The edit spec's own max_chars_per_line ~26 never fit at 62px (26 characters
+    # needed ~840px against 580 available), which is why it was excluded at
+    # extraction. At 44px it is nearly reachable — 25 against its 26 — but the
+    # derivation still wins over the copied number.
+    chars_per_line_derived: 25
+    avg_char_advance_em: 0.52    # Inter SemiBold, mixed case. The divisor above.
+
+  # ---- typography -----------------------------------------------------
+  # Source: reel-typography-spec sections "Fonts" and "Text formatting rules".
+  typography:
+    font_family: Inter           # one family per video — never introduce a third
+    caption_weight: 600          # SemiBold
+    caption_size_px: 44          # spec range 55-70; 62 was the spec's own constant.
+                                 # BELOW THE SPEC RANGE ON PURPOSE, 2026-07-30. It is the
+                                 # price of caption.max_lines: 1 — see that value. One row at
+                                 # 62px holds 17 characters, which is 2-3 words and flips the
+                                 # card ~1.5x faster; 44px holds 25 and keeps the card count
+                                 # (83) and mean duration (0.96s) near what two rows gave.
+                                 #
+                                 # 44 RATHER THAN 46 FOR ONE CHARACTER, and the character is
+                                 # the point. "the worse the output gets" is 25 characters —
+                                 # the person named it as the phrase they wanted whole. At
+                                 # 46px the row holds 24 and it splits to "the worse the
+                                 # output" / "gets"; at 44px it fits in one card.
+                                 #
+                                 # Still 4px clear of legibility_floor_px. Raising this back
+                                 # toward the spec range means going back to two rows.
+    legibility_floor_px: 40      # absolute. Nothing renders below this.
+    allow_serif: false           # "breaks down under video compression"
+    hierarchy_via: [weight, size]  # not additional families
+
+    # Colour treatment. Precedence assigns this to the typography spec, which is
+    # SILENT on shadow and stroke, while the edit spec has the answer. Resolved
+    # by treating shadow-vs-stroke as a legibility mechanic rather than a visual
+    # identity choice, so it inherits from the edit spec.
+    colour: "#FFFFFF"            # edit-spec: white
+    case: sentence               # edit-spec: sentence case
+    shadow: soft_dark            # edit-spec: "soft dark drop shadow rather than a hard stroke"
+    stroke: none
+    background_box: none         # edit-spec: "no background box, no pill"
+
+    subtitles_topmost: true      # edit-spec: "subtitles are always the topmost layer"
+
+  # ---- audio calibration -----------------------------------------------
+  # Source: reference/source-specs/audio-measurements.md, which holds the
+  # measurement each number came from. Added 2026-08-01.
+  #
+  # THERE IS NO TARGET LEVEL HERE, AND THAT IS THE DESIGN. "I have no target
+  # value" — the reference is the mean of the run's own per-segment levels, so
+  # it is computed fresh every time and cannot be a setting. A fixed target
+  # would also be the one thing the measurement forbids: background level moved
+  # 12 dB between two of this person's videos.
+  #
+  # EXPECT THE TWO CORRECTION AMOUNTS TO MOVE. They are set by ear on real
+  # output. Change them here, with the reason, or override for one run from
+  # memory/preferences.md `## Audio`.
+  audio:
+
+    # SEGMENT AND CLIP ARE NOT THE SAME THING IN THIS BLOCK. A *segment* is a
+    # stretch this stage found for itself, by measuring; a *clip* is one file off
+    # the phone, and by the time the export arrives the joins are invisible. The
+    # two need not match — the stage may find three segments in a video you
+    # assembled from nine clips (governance.md rule 4). The settings below act on
+    # segments. Where a comment cites a measurement across clips, it means clips.
+
+    # How far each segment is moved toward the run's average level.
+    #
+    # 100%, DECIDED BY THE PERSON ON 2026-08-14, UP FROM 0.75: "make sure that
+    # all clips align in terms of sound". The earlier value held back a quarter
+    # of the correction so that emphasis put between takes would survive. The
+    # instruction is that clip-to-clip difference is not emphasis — it is the
+    # thing being removed — and that emphasis inside a sentence, which this
+    # never touches, is where it actually lives.
+    #
+    # It never approached max_correction_db below: the largest offset this
+    # produces on either measured video is 4.45 dB against a cap of 8.
+    #
+    # A tuning value, not a rule. Move it by ear rather than defend it.
+    between_segment_correction: 1.00
+
+    # How far the level drift INSIDE a segment is flattened, around that
+    # segment's own mean so the mean does not move.
+    #
+    # THIS IS THE LARGER OF THE TWO PROBLEMS. Nine of ten clips on the reel are
+    # quieter at the end than the start — mean 5.4 dB, worst 9.6 dB — against
+    # 1.0-2.9 dB BETWEEN clips.
+    #
+    # 100%, DECIDED BY THE PERSON ON 2026-08-14, UP FROM 0.50, WHICH WAS OPENLY
+    # A GUESS. "Keep the fades at 1 but make sure that all clips align in terms
+    # of sound. That way, we don't need a fade."
+    #
+    # MEASURED BEFORE IT WAS SET, because the obvious metric barely moves here
+    # and would have argued for leaving it alone. Droop — each clip's first
+    # third minus its last third, which is what a listener actually hears fall
+    # away — across the two videos:
+    #
+    #     within   mean droop    worst clip
+    #       0.00   3.31 / 3.92   7.97 / 12.49 dB
+    #       0.50   1.64 / 1.95   3.99 /  6.24
+    #       1.00  -0.04 / 0.01   5.00 /  2.09
+    #
+    # The 5.00 dB left at 1.00 is one clip that is never corrected at all — the
+    # reel's opening 1.73s, under min_drift_fit_s below. Nothing else survives.
+    #
+    # THIS CORRECTION IS UNCAPPED, KNOWINGLY. max_correction_db governs the
+    # between-clip offset only; the largest shift this produces is 10.29 dB on
+    # the second video with nothing checking it. A cap was proposed at 12 and
+    # declined on 2026-08-14: "the editor is an iterative process and if
+    # something goes wrong, I'll say so". A wrong correction is caught by ear on
+    # the next run rather than by a guessed limit. Reopens on the first video
+    # where one clip comes out obviously wrong for no visible reason.
+    #
+    # SEPARATE FROM between_segment_correction AND MUST STAY SEPARATE. They protect
+    # different things, so tuning one by ear must not move the other.
+    within_segment_correction: 1.00
+
+    # The ceiling peaks are capped at, in dBTP (true peak, not sample peak).
+    #
+    # OPEN — SET THIS BY EYE AGAINST CAPCUT'S METER ON ONE REAL EXPORT. "Not
+    # red/orange" describes a meter whose thresholds are not documented. What is
+    # measured is that the ceiling is being hit: peaks of -0.1 and -0.2 dBFS on
+    # two videos, -3.0 dBFS on a third. -1.0 is the obvious starting value and
+    # nothing more than that.
+    #
+    # ENFORCED AT THE PEAK, NEVER BY TURNING THE CLIP DOWN. Lowering whole-clip
+    # gain until the loudest consonant clears the meter makes the clip quiet and
+    # lands every clip at a different level — which is the problem this exists
+    # to solve.
+    peak_ceiling_dbtp: -1.0
+
+    # High-pass corner. Applied always, before anything is measured, so no level
+    # is computed with rumble in it and one filter serves both the measurement
+    # and the delivered file.
+    #
+    # Nothing in speech lives below 80 Hz, and the second recording's background
+    # energy sits 59% below 300 Hz — 92% below 1 kHz on another. A steady low
+    # rumble, not hiss. The cheapest single improvement available, at no cost.
+    highpass_hz: 80
+
+    # ---- segmentation: the picture nominates, loudness decides -----------
+    #
+    # THESE TWO INTERACT, AND THE INTERACTION IS WHAT SET scene_threshold.
+    # Read both notes together before changing either.
+
+    # ffmpeg scene score above which a position is worth MEASURING. It buys no
+    # vote — every boundary that survives does so because the measured speech
+    # level differs across it.
+    #
+    # 0.05 AND NOT 0.004, SETTLED 2026-08-03 BY MEASURING RATHER THAN ARGUING.
+    # The design said to nominate generously, on the grounds that extra
+    # nominations are nearly free and a missed one is unrecoverable. That is
+    # true of a handful of extras. It is not true of these:
+    #
+    #                     0731 reel (9 cuts)      earlier video (17 cuts)
+    #     scene > 0.004   393 nominations         673 nominations
+    #                     median span 0.07s       median span 0.03s
+    #     scene > 0.05     10 nominations          20 nominations
+    #                     median span 5.67s       median span 4.10s
+    #
+    # At 0.004 the picture nominates 40x more positions than there are cuts,
+    # spaced 30-70ms apart. min_step_db's margin below holds BECAUSE a whole
+    # clip's voiced frames are averaged; over a 0.03s span there is nothing to
+    # average, the margin collapses, and testing 673 positions against a step
+    # near the noise floor is precisely the regime that "will invent
+    # boundaries". At 0.05 nominations land near the real cut count and every
+    # span is long enough to measure.
+    #
+    # WHAT THIS GIVES UP, KNOWINGLY. One real cut in the earlier video scores
+    # 0.005 — a jump cut joining two clips shot in the same place at the same
+    # framing, "indistinguishable from camera shake". No threshold catches it
+    # without catching everything, because there is nothing there to see. It
+    # only matters if the level actually differs across it, and if it does not,
+    # missing it costs nothing. The printed `kept N of M` count is what makes a
+    # bad run visible.
+    #
+    # REOPENS IF a real run shows the picture missing boundaries where the level
+    # genuinely differs. The fix then is not a lower number — it is to test only
+    # word gaps long enough to be a cut, and accept a boundary only where the
+    # step clears the measurement noise by a margin.
+    scene_threshold: 0.05
+
+    # The measured step in speech loudness across a nominated position, below
+    # which the position is discarded.
+    #
+    # 1.0 dB is the smallest real step measured, and 1.6x the worst-case
+    # uncertainty on a clip's level (+/- 0.35 to 0.61 dB). That margin holds
+    # BECAUSE averaging a whole clip's voiced frames collapses the uncertainty —
+    # which is exactly why scene_threshold above may not be lowered without
+    # rethinking this value at the same time.
+    #
+    # Still the value with the weakest claim to being a fixed number: it is
+    # tuned on two videos, and the standing conclusion from those two videos is
+    # that thresholds should be derived from the material at run time. Left
+    # fixed because at 0.05 every span it judges is a clip-length span, which is
+    # the condition its margin was measured under.
+    min_step_db: 1.0
+
+    # How far either side of a nominated position the step above is measured.
+    #
+    # THE STEP IS MEASURED AT THE JOIN, NOT BETWEEN CLIP AVERAGES, AND THAT WAS
+    # THE FIRST BUILD'S ONE AUDIBLE FAULT. Comparing the whole clip before with
+    # the whole clip after hides a discontinuity, because a clip that opens loud
+    # and ends quiet averages out to its neighbour's level. On the reel that
+    # discarded the cut at 44.58s — whole-segment step 0.99 dB against a 1.0
+    # threshold, actual step at the join 5.51 dB — and 22.7 seconds spanning
+    # three clips became one segment with one straight line fitted across it.
+    # Six of fourteen boundaries on the second video were being lost the same
+    # way, carrying joins of 1.5 to 8.6 dB.
+    #
+    # BOTH MEASUREMENTS ARE KEPT AND THE LARGER DECIDES. They catch different
+    # failures: the local step finds a jump hidden by a clip's own fall, and the
+    # whole-segment step finds two clips that genuinely differ but happen to
+    # meet at a matching moment (39.19s on the second video: whole-segment 3.94
+    # dB, join 0.86). Taking the larger can only keep boundaries — it can never
+    # discard one that survives today.
+    #
+    # 2.0 IS BORROWED, NOT TUNED. It is min_drift_fit_s below, this workspace's
+    # existing statement of the least speech a level trend can be read from, and
+    # it separates the joins from the non-joins cleanly across all fourteen
+    # measured positions. Where a join has less speech than this on one side,
+    # that side uses what is there; under the frame minimum the local step is
+    # unmeasurable and the whole-segment step decides alone, as it did before.
+    boundary_window_s: 2.0
+
+    # How many videos may go by with the loudness check rejecting NOTHING before
+    # the run says out loud that the check may be dead weight.
+    #
+    # THE CHECK'S REMAINING VALUE IS UNTESTED, AND THIS IS HOW IT GETS TESTED.
+    # With the step measured at the join, both measured videos keep every
+    # boundary the picture nominates — so neither of them can tell "the larger
+    # of the two steps" apart from "keep everything nominated". The check still
+    # guards a false nomination (camera shake, a hand across the lens), but no
+    # measured video contains one. Nothing here can settle that; only real
+    # footage over time can, so the count persists in memory/boundary-tally.md
+    # and the run reports it. 10 is a review point, not a threshold — nothing
+    # acts on it, it only prints.
+    veto_review_after_videos: 10
+
+    # Below this much VOICED SPEECH (not wall-clock), a segment cannot be
+    # measured reliably, so it is merged into a neighbour rather than corrected.
+    # Merged into the neighbour closer to it IN LEVEL, not the nearer one in
+    # time — the point of the merge is to not invent a correction.
+    min_segment_s: 1.0
+
+    # Below this much voiced speech, a segment has too little to read a level
+    # curve from, so the within-clip step is skipped for it and only the
+    # between-clip offset applies.
+    #
+    # ITS ORIGINAL REASON HAS WEAKENED, AND THAT IS RECORDED RATHER THAN ACTED
+    # ON. It read "fitting a slope to a second of speech reads noise as tilt",
+    # and no slope is fitted any more — the correction reads a local level over
+    # drift_window_s and each reading is already guarded by a minimum frame
+    # count. Lowering it to 1.5 was offered and declined on 2026-08-14, and the
+    # measurement since is that it would change little: on the reel one fewer
+    # second sits more than 3 dB out, and on the second video nothing changes.
+    #
+    # WHAT IT COSTS, WHICH IS NOW VISIBLE. Exactly one segment per video falls
+    # under it, and on the reel that is the opening 0.00-2.20s — 1.73s of speech
+    # across 7 words, uncorrected, and the single largest remaining departure in
+    # the finished file at +3.6 dB. If the start of a video sounds loud or soft,
+    # this is the value that did it.
+    min_drift_fit_s: 2.0
+
+    # How much audio around a word the within-clip correction looks at to decide
+    # how loud that moment is.
+    #
+    # THE CORRECTION FOLLOWS THE LEVEL OVER TIME. It used to fit a straight line
+    # to the level of each word, which could only remove a tilt — and the level
+    # inside a clip does not tilt, it humps. On the reel that left eleven seconds
+    # more than 3 dB from the video's own average and four more than 5, reported
+    # as "some parts are significantly louder than others".
+    #
+    # PER-WORD LEVELS ARE TOO NOISY TO SMOOTH, WHICH IS WHY THIS IS A WINDOW OF
+    # AUDIO. 26 of 216 words on the reel carry fewer than five voiced frames, and
+    # within two seconds the per-word figures run from -11.4 dB on "this" to
+    # -51.7 dB on "is". Averaging over a stretch of audio weights each word by
+    # how long it actually sounds.
+    #
+    # 1.5 IS A LISTENING CALL AND THE FIRST DIAL TO REACH FOR. Shorter follows
+    # the voice more closely and moves the gain more between neighbouring words,
+    # which is what eventually sounds worked-on:
+    #
+    #     window   seconds >3 dB off (reel)   >5 dB   word-to-word p95
+    #      line              11                 4          2.54 dB
+    #      3.0s              10                 2          2.07
+    #      2.0s               6                 0          2.77
+    #      1.5s               2                 0          3.35
+    #      1.0s               4                 0          5.58
+    #
+    # RAISE THIS FIRST if a finished video sounds processed. The gain still only
+    # changes in the gaps between words, and always over a ramp.
+    drift_window_s: 1.5
+
+    # The hard stop on any single correction, in dB. It exists because
+    # segmentation is load-bearing and can fail silently: a bad boundary that
+    # merges two genuinely different recordings would otherwise be "corrected"
+    # by a large wrong gain.
+    #
+    # NOT MEASURED — REASONED. The measured spreads (7 dB between clips, 9.6 dB
+    # worst within a clip) put a real correction under 10 dB, so 8 dB stops a
+    # runaway without blocking legitimate work. IT FIRES AS A FLAG, not
+    # silently: it fires precisely when something upstream was probably wrong.
+    max_correction_db: 8.0
+
+    # How long a gain change takes to slide across a word gap. A level change in
+    # the middle of a word is audible; the same change in the gap before it is
+    # not. Gaps are ample for this — median 0.24s on the reel and 0.15s on the
+    # earlier video, against a ramp measured in tens of milliseconds.
+    ramp_ms: 60
+
+    # ---- the limiter ------------------------------------------------------
+    # A safety net that often does nothing while levelling runs every time.
+    # These two are what decide whether it is transparent or audible.
+
+    # How far ahead the limiter sees a peak coming, so it can reduce gain across
+    # the peak rather than clamping the instant it arrives.
+    limiter_lookahead_ms: 5
+
+    # How long it takes to let go afterwards.
+    #
+    # THIS IS THE ONE THAT DECIDES WHETHER IT PUMPS. Pumping is what a limiter
+    # does when it recovers fast enough to be heard breathing between syllables,
+    # and the standing constraint is the person's own: "without sacrificing the
+    # coherence/consistency of the audio". That is a test you apply by listening,
+    # not a technique that is ruled out in advance — so set this by ear alongside
+    # the two correction amounts, not from a textbook.
+    limiter_release_ms: 120
+
+  # ---- render -----------------------------------------------------------
+  render:
+    resolution: [1080, 1920]
+    single_export_serves: [tiktok, instagram]   # the safe-zone envelope is what makes
+                                                # one export enough. Per-platform split
+                                                # is a config change, not a rewrite.
+
+# =======================================================================
+diagnostics:
+# Measured, printed with the run, and enforced by NOTHING.
+# =======================================================================
+
+  # Word count per card. Cannot be a rule alongside duration: captions run
+  # wall-to-wall with zero gap and track speech exactly, so a card's duration is
+  # words / speech rate, not a free choice. At the edit spec's own stated
+  # 180-210 wpm:
+  #     4 words -> 1.14-1.33s   inside the 1.0-1.5s target
+  #     6 words -> 1.71-2.00s   OUTSIDE it
+  #    11 words -> 3.14-3.67s   against a stated 2.5s maximum
+  # And backwards: the spec's measured 1.06s mean implies 3.2-3.7 words/card,
+  # not 4-6. The 2.5s ceiling already caps a card near 8 words, so the 11-word
+  # ceiling could never fire.
+  words_per_card: [4, 6]         # edit-spec: target_words 4-6 — reported only
+  max_words_per_card: 11         # edit-spec: max_words 11 — reported only, unreachable
+
+  # Reading speed. CANNOT be enforced: captions track speech at zero gap, so
+  # nothing downstream can slow them. It is reported so the person finds out
+  # before posting which stretches will read frantic.
+  # 20 cps is common broadcast-captioning practice for adults. Neither source
+  # spec has a reading-speed ceiling at all; this restores the character-based
+  # guard the build notes asked for, in the only form possible here.
+  chars_per_second_flag_over: 20
+
+  # The window the audio stage reports its steadiness over, in seconds.
+  #
+  # A REPORTING WINDOW, NOT A TUNING VALUE — nothing is measured against it and
+  # no correction reads it. It sits here because the first build reported the
+  # spread of its own segment averages, which is the quantity the corrections
+  # are computed from and so the one they cannot fail to improve: it fell from
+  # 7.23 dB to 1.81 while a clip that came in loud went untouched. One second is
+  # roughly the span over which the ear notices a level has changed, so a curve
+  # measured this way moves when the video audibly moves.
+  heard_window_s: 1.0
+
+
+# =======================================================================
+# EXCLUDED ON RECORD — values present in the source specs and deliberately
+# not extracted, each with its reason:
+#
+#     reference/source-specs/EXCLUSIONS.md
+#
+# Silent omission is what removed the reading-speed ceiling the build notes
+# asked for, so nothing is left out quietly — but the record is provenance,
+# no script reads it, and it does not belong in the file a caption task loads.
+# Check it before adding a value here that a spec appears to ask for.
+# =======================================================================
